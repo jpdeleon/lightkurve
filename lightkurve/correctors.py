@@ -436,7 +436,11 @@ class SFFCorrector(object):
         """s describes the "smoothness" of the spline"""
         time = time - time[0]
         knots = np.arange(0, time[-1], 1.5)
-        t, c, k = interpolate.splrep(time, flux, t=knots[1:], s=s, task=-1)
+        try:
+            t, c, k = interpolate.splrep(time, flux, t=knots[1:], s=s, task=-1)
+        except:
+            #
+            t, c, k = interpolate.splrep(sorted(time), flux, t=knots[1:], s=s, task=-1)
         return interpolate.BSpline(t, c, k)
 
     def bin_and_interpolate(self, s, normflux, bins, sigma):

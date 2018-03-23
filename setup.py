@@ -14,7 +14,7 @@ if "release" in sys.argv[-1]:
 # Load the __version__ variable without importing the package already
 exec(open('lightkurve/version.py').read())
 
-setup(name='lightkurve',
+setup(name='lightkurve2',
       version=__version__,
       description="A simple and beautiful package for astronomical "
                   "flux time series analysis in Python.",
