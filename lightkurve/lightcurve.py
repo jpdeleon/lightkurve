@@ -49,7 +49,7 @@ class LightCurve(object):
         df = df.sort_index()
         df.columns = ['flux','ferr']
 
-        self.time = df.time.values
+        self.time = df.index.values
         self.flux = df.flux.values
         self.flux_err = df.ferr.values
 
