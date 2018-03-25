@@ -436,7 +436,7 @@ class SFFCorrector(object):
     def _sort_vectors(self):
         '''
         patch added to chronologically sort vectors and
-        avoid problems in fit_bspline() 
+        avoid problems in fit_bspline()
         '''
         time = self.time
         flux = self.flux
@@ -464,7 +464,7 @@ class SFFCorrector(object):
             t, c, k = interpolate.splrep(time, flux, t=knots[1:], s=s, task=-1)
         except:
             #sort time
-            df = _sort_vectors()
+            df = self._sort_vectors()
             time = df.time.values
             flux = df.flux.values
             t, c, k = interpolate.splrep(time, flux, t=knots[1:], s=s, task=-1)
