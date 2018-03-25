@@ -433,16 +433,16 @@ class SFFCorrector(object):
         mask = x < x1
         return np.trapz(y=np.sqrt(1 + self.polyprime(x[mask]) ** 2), x=x[mask])
 
-    def _sort_vectors(self):
+    def _sort_vectors(time,flux,flux_err=None,centroid_col=None,centroid_row=None):
         '''
         patch added to chronologically sort vectors and
         avoid problems in fit_bspline()
+
+        time,flux are only currently sortable;
+
+        needed to access flux_err,centroid_col,centroid_row
+        from KeplerTargetPixelFile
         '''
-        time = self.time
-        flux = self.flux
-        flux_err = self.flux_err
-        centroid_col = self.centroid_col
-        centroid_row = self.centroid_row
 
         df = pd.DataFrame(np.c_[flux,flux_err,centroid_col,centroid_row],index=time)
         df = df.sort_index()
