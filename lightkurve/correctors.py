@@ -434,6 +434,10 @@ class SFFCorrector(object):
         return np.trapz(y=np.sqrt(1 + self.polyprime(x[mask]) ** 2), x=x[mask])
 
     def _sort_vectors(self):
+        '''
+        patch added to chronologically sort vectors and
+        avoid problems in fit_bspline() 
+        '''
         time = self.time
         flux = self.flux
         flux_err = self.flux_err
@@ -460,7 +464,7 @@ class SFFCorrector(object):
             t, c, k = interpolate.splrep(time, flux, t=knots[1:], s=s, task=-1)
         except:
             #sort time
-            df = sort_vectors()
+            df = _sort_vectors()
             time = df.time.values
             flux = df.flux.values
             t, c, k = interpolate.splrep(time, flux, t=knots[1:], s=s, task=-1)
