@@ -502,9 +502,24 @@ class KeplerTargetPixelFile(TargetPixelFile):
             logging.warning('Warning: aperture mask contains zero pixels.')
         centroid_col, centroid_row = self.centroids(aperture_mask)
 
-        return KeplerLightCurve(flux=np.nansum(self.flux[:, aperture_mask], axis=1),
-                                time=self.time,
-                                flux_err=np.nansum(self.flux_err[:, aperture_mask]**2, axis=1)**0.5,
+        flux=np.nansum(self.flux[:, aperture_mask], axis=1)
+        time=self.time
+        flux_err=np.nansum(self.flux_err[:, aperture_mask]**2, axis=1)**0.5
+
+
+        df = pd.DataFrame(np.c_[flux,flux_err,centroid_col,centroid_row],index=time)
+        df.sort_index()
+        df.columns = ['flux','flux_err','centroid_col','centroid_row']
+
+        time = df.index.values
+        flux = df.flux.values
+        flux_err = df.flux_err.values
+        centroid_col = df.centroid_col.values
+        centroid_row = df.centroid_row.values
+
+        return KeplerLightCurve(time=time,
+                                flux=flux,
+                                flux_err=flux_err,
                                 centroid_col=centroid_col,
                                 centroid_row=centroid_row,
                                 quality=self.quality,
