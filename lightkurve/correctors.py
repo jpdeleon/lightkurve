@@ -438,15 +438,16 @@ class SFFCorrector(object):
         patch added to chronologically sort vectors and
         avoid problems in fit_bspline()
 
-        time,flux are only currently sortable;
-
-        needed to access flux_err,centroid_col,centroid_row
+        time,flux are only currently sortable; needed to access
+        flux_err,centroid_col,centroid_row
         from KeplerTargetPixelFile
         '''
 
-        df = pd.DataFrame(np.c_[flux,flux_err,centroid_col,centroid_row],index=time)
+        #df = pd.DataFrame(np.c_[flux,flux_err,centroid_col,centroid_row],index=time)
+        #df.columns = ['f', 'ferr', 'centroid_col', 'centroid_row']
+        df = pd.DataFrame(flux, index=time)
         df = df.sort_index()
-        df.columns = ['f', 'ferr', 'centroid_col', 'centroid_row']
+        df.columns = ['flux']
 
         # self.time = time
         # self.flux = flux
@@ -465,7 +466,7 @@ class SFFCorrector(object):
         except:
             #sort time
             df = self._sort_vectors(time,flux)
-            time = df.time.values
+            time = df.index.values
             flux = df.flux.values
             t, c, k = interpolate.splrep(time, flux, t=knots[1:], s=s, task=-1)
 
