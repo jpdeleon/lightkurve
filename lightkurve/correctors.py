@@ -465,7 +465,11 @@ class SFFCorrector(object):
             t, c, k = interpolate.splrep(time, flux, t=knots[1:], s=s, task=-1)
         except:
             #sort time
-            df = self._sort_vectors(time,flux)
+            #df = self._sort_vectors(time,flux)
+            df = pd.DataFrame(flux,index=time)
+            df.columns = ['flux']
+
+            df = df.sort_index()
             time = df.index.values
             flux = df.flux.values
             t, c, k = interpolate.splrep(time, flux, t=knots[1:], s=s, task=-1)
