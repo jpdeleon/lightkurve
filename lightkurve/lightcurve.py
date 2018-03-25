@@ -40,9 +40,19 @@ class LightCurve(object):
     """
 
     def __init__(self, time, flux, flux_err=None, meta={}):
-        self.time = np.asarray(time)
-        self.flux = self._validate_array(flux, name='flux')
-        self.flux_err = self._validate_array(flux_err, name='flux_err')
+        time = np.asarray(time)
+        flux = self._validate_array(flux, name='flux')
+        flux_err = self._validate_array(flux_err, name='flux_err')
+
+        #patch to sort vectors in time
+        df = pd.DataFrame(np.c_[flux,flux_err], index=time)
+        df = df.sort_index()
+        df.columns = ['flux','ferr']
+
+        self.time = df.time.values
+        self.flux = df.flux.values
+        self.flux_err = df.ferr.values
+
         self.meta = meta
 
     def _validate_array(self, arr, name='array'):
