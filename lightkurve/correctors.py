@@ -12,6 +12,7 @@ import oktopus
 import numpy as np
 from scipy import linalg, interpolate
 from matplotlib import pyplot as plt
+import pandas as pd
 
 from astropy.io import fits as pyfits
 from astropy.stats import sigma_clip
@@ -432,7 +433,7 @@ class SFFCorrector(object):
         mask = x < x1
         return np.trapz(y=np.sqrt(1 + self.polyprime(x[mask]) ** 2), x=x[mask])
 
-    def sort_vectors(self):
+    def _sort_vectors(self):
         time = self.time
         flux = self.flux
         flux_err = self.flux_err
