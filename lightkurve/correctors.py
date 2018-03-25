@@ -432,6 +432,25 @@ class SFFCorrector(object):
         mask = x < x1
         return np.trapz(y=np.sqrt(1 + self.polyprime(x[mask]) ** 2), x=x[mask])
 
+    def sort_vectors(self):
+        time = self.time
+        flux = self.flux
+        flux_err = self.flux_err
+        centroid_col = self.centroid_col
+        centroid_row = self.centroid_row
+
+        df = pd.DataFrame(np.c_[flux,flux_err,centroid_col,centroid_row],index=time)
+        df = df.sort_index()
+        df.columns = ['f', 'ferr', 'centroid_col', 'centroid_row']
+
+        # self.time = time
+        # self.flux = flux
+        # self.flux_err = flux_err
+        # self.centroid_col = centroid_col
+        # self.centroid_row = centroid_row
+
+        return df
+
     def fit_bspline(self, time, flux, s=0):
         """s describes the "smoothness" of the spline"""
         time = time - time[0]
@@ -439,8 +458,12 @@ class SFFCorrector(object):
         try:
             t, c, k = interpolate.splrep(time, flux, t=knots[1:], s=s, task=-1)
         except:
-            #
-            t, c, k = interpolate.splrep(sorted(time), flux, t=knots[1:], s=s, task=-1)
+            #sort time
+            df = sort_vectors()
+            time = df.time.values
+            flux = df.flux.values
+            t, c, k = interpolate.splrep(time, flux, t=knots[1:], s=s, task=-1)
+
         return interpolate.BSpline(t, c, k)
 
     def bin_and_interpolate(self, s, normflux, bins, sigma):
