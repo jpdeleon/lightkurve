@@ -29,7 +29,7 @@ parser.add_argument('-tol', '--break_tolerance',
 parser.add_argument('-s', '--save_as_tpf',
                     help='append the measurements to hdulist', action='store_true', default=False)
 parser.add_argument('-v', '--verbose',
-                    help='print used and assumed parameter values', action='store_true', default=False)
+                    help='print given and default parameter values', action='store_true', default=False)
 parser.add_argument('-o', '--outdir',
                     help='output directory', type=str, default='reduced')
 

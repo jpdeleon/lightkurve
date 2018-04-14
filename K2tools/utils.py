@@ -3,9 +3,8 @@
 import numpy as np
 import matplotlib.pyplot as pl
 import os
-
+from glob import glob
 import pandas as pd
-from astropy.io import fits
 
 from matplotlib.colors import LogNorm
 from scipy.ndimage import measurements
@@ -335,7 +334,8 @@ def tpf2lc(fname, radii, aper_shape='round', outlier_sigma=5,
         for num,r in enumerate(flux_per_r):
             comment_num = 'COMMENT{}'.format(num)
             aper_name = '{}_APER{}'.format(aper_shape,num)
-            hdr[comment_num] = 'rad: {}, shape: {}'.format(r,aper_shape)
+            hdr['aper_rad'] = r
+            hdr['aper_shape'] = aper_shape
 
             tab = table.Table(flux_per_r[r], names=['time','flux','flux_err'])
             bintab=fits.BinTableHDU(tab,name=aper_name,header=hdr)
@@ -372,29 +372,85 @@ def read_tpf(fname,index,return_hdr=True):
         if return_hdr:
             return data, hdr
         else:
-            data
+            return data
     elif index == 1: #target tables
         data = hdulist[index].data
         hdr = hdulist[index].header
         if return_hdr:
             return data, hdr
         else:
-            data
+            return data
     elif index == 2: #aperture mask
         data = hdulist[index].data
         hdr = hdulist[index].header
         if return_hdr:
             return data, hdr
         else:
-            data
+            return data
     else:
         df=table.Table(hdulist[index].data).to_pandas()
         hdr = hdulist[index].header
         if return_hdr:
             return df, hdr
         else:
-            df
+            return df
 
+def plot_lc(fname,index,verbose=True,show_all_lc=False,show_mask=True):
+    hdulist = fits.open(fname)
+    hdulen = len(hdulist)
+    tpf = KeplerTargetPixelFile(fname, quality_bitmask='hardest')
+    if verbose:
+        print(hdulist.info())
+
+    if index == 0: #primary
+        data, hdr = read_tpf(fname,index,return_hdr=True)
+        print('Plot of target table currently unsupported. Exiting!\n')
+        sys.exit()
+
+    elif index == 1: #target tables
+        data, hdr = read_tpf(fname,index,return_hdr=True)
+        print('Plot of target table currently unsupported. Exiting!\n')
+        sys.exit()
+
+    fig, ax = pl.subplots(1,1,figsize=(10,10))
+    if index<=hdulen and index>2:
+        df, hdr = read_tpf(fname,index,return_hdr=True)
+
+        #read flux per r
+        if show_all_lc:
+            for i in np.arange(3,hdulen+1,1):
+                t = df['time']
+                f = df['flux']
+                ferr = df['ferr']
+                rad = hdr['aper_radius']
+                shape = hdr['aper_shape']
+
+                ax.errorbar(t,f,yerr=ferr,marker='o',label='r={}'.format(rad))
+                ax.set_title(tpf.keplerid)
+                pl.legend()
+        else:
+            t = df['time']
+            f = df['flux']
+            ferr = df['ferr']
+            rad = hdr['aper_radius']
+            shape = hdr['aper_shape']
+            ax.errorbar(t,f,yerr=ferr,marker='o',label='r={}'.format(rad))
+            ax.set_title(tpf.keplerid)
+            pl.legend()
+
+        if show_mask:
+            mask = hdulist[2].data
+            fluxes = tpf.flux
+            plot_aper_mask(fluxes,rad,aper_shape=shape,contrast=0.1,epic=tpf.keplerid)
+
+    elif index>hdulen:
+        print('hdulist has index until {} only. Exiting!\n'.format(hdulen))
+        sys.exit()
+
+    else:
+        print('Incorrect index. Set verbose=True.\n')
+
+    return fig
 #---------------------------STATS---------------------------#
 
 

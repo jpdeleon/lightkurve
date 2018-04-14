@@ -20,3 +20,8 @@ To do aperture photometry with given mask and radii=[3,4,5] then save as fits fi
 ```shell
 data $ tpf2lc 'Yu18candidates/' 3 4 5 --mask='round' -s -v --o='reduced'
 ```
+
+To check output
+```python
+plot_lc(fname,index,verbose=True,show_all_lc=False,show_mask=True)
+```

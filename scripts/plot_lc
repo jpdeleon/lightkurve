@@ -1,0 +1,29 @@
+#!/usr/bin/env python
+
+from glob import glob
+import argparse
+import os
+import sys
+import K2tools
+
+parser = argparse.ArgumentParser(description="""
+                Plot reduced lightcurves""",
+                usage='use "%(prog)s --help" for more information',
+                formatter_class=argparse.RawTextHelpFormatter)
+parser.add_argument('fname', help='tpf filename or directory containing tpfs', type=str)
+parser.add_argument('index', help='index of hdulist', type=int)
+parser.add_argument('-v', '--verbose',
+                    help='print used and assumed parameter values', action='store_true', default=False)
+parser.add_argument('-a', '--show_all_lc',
+                    help='show all lc apertures', action='store_true', default=True)
+parser.add_argument('-m', '--show_mask',
+                    help='show aperture mask used', action='store_true', default=False)
+
+args = parser.parse_args()
+fname = args.fname
+index = args.index
+verbose = args.verbose
+show_all_lc = args.show_all
+show_mask   = args.show_mask
+
+fig = plot_lc(fname,index,verbose=verbose,show_all_lc=show_all_lc,show_mask=show_mask)
