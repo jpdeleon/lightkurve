@@ -17,7 +17,7 @@ exec(open('lightkurve/version.py').read())
 setup(name='lightkurve2',
       version=__version__,
       description="scripts written based on forked lightkurve",
-      long_description=open('README.rst').read(),
+      long_description=open('README_orig.rst').read(),
       author='KeplerGO and Jerome de Leon',
       author_email = 'jpdeleon@astron.s.u-tokyo.ac.jp',
       url = 'https://github.com/jpdeleon/exofop',
