@@ -2,16 +2,16 @@
 
 from glob import glob
 import argparse
+import os
 import sys
-sys.path.append('../K2tools')
-from utils import *
+import K2tools
 
 parser = argparse.ArgumentParser(description="""
                 Aperture photometry with multiple apertures and append it to hdulist""",
                 usage='use "%(prog)s --help" for more information',
                 formatter_class=argparse.RawTextHelpFormatter)
 parser.add_argument('fname', help='tpf filename or directory containing tpfs', type=str)
-parser.add_argument('radii', help='list of radii (e.g. [3,4,5])', nargs="*", type=int)
+parser.add_argument('radii', help='list of radii in pix (e.g. 3 4 5)', nargs="*", type=int)
 parser.add_argument('-mask', '--mask',
                     help='aperture mask shape [round|square|irregular]', default='round', type=str)
 parser.add_argument('-sig', '--sigma',
@@ -54,7 +54,7 @@ def run(epic,fname):
     try:
         print('EPIC {}'.format(epic))
 
-        flux_per_r, aper_mask = tpf2lc(fname, radii, aper_shape=mask,
+        flux_per_r, aper_mask = K2tools.tpf2lc(fname, radii, aper_shape=mask,
                           outlier_sigma=sigma, flat_window=fwin, corr_window=cwin,
                           cutoff_limit=limit, polyorder=order, break_tolerance=tol,
                           save_as_tpf=save, verbose=verbose, outdir=outdir)
@@ -70,14 +70,14 @@ def run(epic,fname):
 
     return flux_per_r, aper_mask
 
-file_list = glob(fname)
+file_list = glob(os.path.join(fname,'*.fits'))
 
 if len(file_list)>1:
     #directory of tpfs
     file_list.sort()
     for fname in file_list:
         epic = fname.split('/')[-1].split('-')[0][4:]
-        run(epic)
+        run(epic,fname)
 else:
     #just 1 filename
     epic = fname.split('/')[-1].split('-')[0][4:]

@@ -11,11 +11,10 @@ $ pip install .
 To view tpf with stacked flux and superposed aperture mask
 ```shell
 cd lightkurve2/scripts
-alias fname='../data/Yu18candidates/ktwo211397844-unofficial-tpf.fits'
-./make_mask $fname --r=4 --m='round' -s
+./make_mask '../data/Yu18candidates/ktwo211397844-unofficial-tpf.fit' --r=4 --m='round' -s
 ```
 
-To do aperture photometry with given mask and save as fits file
+To do aperture photometry with given mask and radii=[3,4,5] then save as fits file
 ```shell
-$ ./tpf2lc $fname --mask='round' -s -v --o='reduced'
+$ ./tpf2lc '../data/Yu18candidates/' 3 4 5 --mask='round' -s -v --o='reduced'
 ```

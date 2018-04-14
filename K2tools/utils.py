@@ -1,3 +1,5 @@
+#!/usr/bin/evn python
+
 import numpy as np
 import matplotlib.pyplot as pl
 import os
