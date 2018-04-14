@@ -249,7 +249,7 @@ def plot_aper_mask(fluxes,rad,aper_shape,contrast=0.1,epic=None):
     pl.ylabel('Y')
     pl.legend()
     if epic is not None:
-        pl.title(epic)
+        pl.title('EPIC {}'.format(epic))
     pl.show()
 
     return fig
@@ -313,7 +313,8 @@ def tpf2lc(fname, radii, aper_shape='round', outlier_sigma=5,
     hdr = fits.getheader(fname)
     hdulist = fits.open(fname)
     tpf = KeplerTargetPixelFile(fname, quality_bitmask='hardest')
-    assert str(tpf.keplerid) in hdulist.filename()
+    if not str(tpf.keplerid) in hdulist.filename():
+        raise ValueError('Kepler ID in header doesn\'t match the filename')
 
     flux_per_r = {}
     for r in radii:
@@ -334,8 +335,8 @@ def tpf2lc(fname, radii, aper_shape='round', outlier_sigma=5,
         for num,r in enumerate(flux_per_r):
             comment_num = 'COMMENT{}'.format(num)
             aper_name = '{}_APER{}'.format(aper_shape,num)
-            hdr['aper_rad'] = r
-            hdr['aper_shape'] = aper_shape
+            hdr['ap_rad'] = r
+            hdr['ap_shape'] = aper_shape
 
             tab = table.Table(flux_per_r[r], names=['time','flux','flux_err'])
             bintab=fits.BinTableHDU(tab,name=aper_name,header=hdr)
@@ -413,27 +414,28 @@ def plot_lc(fname,index,verbose=True,show_all_lc=False,show_mask=True):
         sys.exit()
 
     fig, ax = pl.subplots(1,1,figsize=(10,10))
-    if index<=hdulen and index>2:
-        df, hdr = read_tpf(fname,index,return_hdr=True)
-
+    if index<hdulen and index>2:
         #read flux per r
+        #import pdb; pdb.set_trace()
         if show_all_lc:
-            for i in np.arange(3,hdulen+1,1):
+            for idx in np.arange(3,hdulen,1):
+                df, hdr = read_tpf(fname,idx,return_hdr=True)
                 t = df['time']
                 f = df['flux']
-                ferr = df['ferr']
-                rad = hdr['aper_radius']
-                shape = hdr['aper_shape']
+                ferr = df['flux_err']
+                rad = hdr['ap_rad']
+                shape = hdr['ap_shape']
 
                 ax.errorbar(t,f,yerr=ferr,marker='o',label='r={}'.format(rad))
                 ax.set_title(tpf.keplerid)
                 pl.legend()
         else:
+            df, hdr = read_tpf(fname,index,return_hdr=True)
             t = df['time']
             f = df['flux']
             ferr = df['ferr']
-            rad = hdr['aper_radius']
-            shape = hdr['aper_shape']
+            rad = hdr['ap_radius']
+            shape = hdr['ap_shape']
             ax.errorbar(t,f,yerr=ferr,marker='o',label='r={}'.format(rad))
             ax.set_title(tpf.keplerid)
             pl.legend()
