@@ -1,8 +1,8 @@
 #!/usr/bin/env python
-
+import sys
+sys.path.append('../src/lightkurve')
 from lightkurve import KeplerTargetPixelFile
 import argparse
-import sys
 sys.path.append('../K2tools')
 from utils import *
 

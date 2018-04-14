@@ -9,7 +9,8 @@ $ pip install -e git+git@github.com:jpdeleon/lightkurve2.git@master#egg=lightkur
 ## Quick test of scripts
 To view tpf with stacked flux and superposed aperture mask
 ```shell
-fname = '../data/Yu18candidates/ktwo211397844-unofficial-tpf.fits'
+cd lightkurve2/scripts
+alias fname='../data/Yu18candidates/ktwo211397844-unofficial-tpf.fits'
 ./make_mask $fname --r=4 --m='round' -s
 ```
 
