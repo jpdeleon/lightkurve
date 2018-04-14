@@ -1,0 +1,97 @@
+#!/usr/bin/env python
+
+import sys
+from glob import glob
+from astropy import table
+from astropy.io import fits
+import pandas as pd
+import matplotlib.pyplot as pl
+sys.path.append('../corrector/')
+
+from sff import *
+from lightkurve import KeplerTargetPixelFile
+
+import getpass
+uname = getpass.getuser()
+
+if uname == 'prometheus':
+    data_dir = '/home/'+uname+'/data/transit/c16-tpf'
+elif uname == 'jp':
+    data_dir = '/home/'+uname+'/data/transit/c16-tpf'
+else: #'muscat'
+    data_dir = '../c16-tpf'
+
+plot_aperture = False
+plot_trend = False
+plot_flat_lc = False
+plot_corrected = False
+return_trend = True
+
+sigma = 3
+flat_window = 301
+corr_window = 11
+cutoff_limit = 1.1
+polyorder = 4
+break_tolerance = 5
+
+file_list = glob(data_dir+'/*.fits')
+file_list.sort()
+
+i = file_list[-1]
+hdr = fits.getheader(i)
+hdulist = fits.open(i)
+
+#read tpf
+tpf = KeplerTargetPixelFile(i, quality_bitmask='hardest')
+
+times, fluxes = tpf.time, tpf.flux
+#confirm aperture
+aperture = find_aperture(times,fluxes,cutoff_limit=cutoff_limit,starname=tpf.keplerid)
+tpf.plot(aperture_mask=aperture)
+#convert to lightcurve
+lc = tpf.to_lightcurve(aperture_mask=aperture)
+#clean
+lc = lc.remove_nans().remove_outliers(sigma=sigma)
+#correcting for low freq variability
+flat_lc, trend = lc.flatten(window_length=flat_window,
+                            polyorder=polyorder,
+                            break_tolerance=break_tolerance,
+                            return_trend=True)
+ax = lc.plot(color='C0', label='raw')
+trend.plot(ax=ax, color='C3',label='systematics');
+#correct for systematics using sff
+corr_lc = lc.correct(windows=corr_window, method='sff')
+corr_lc = corr_lc.remove_outliers(sigma)
+#comparison
+ax2 = lc.plot(color='C0', alpha=0.5, label='With Motion')
+corr_lc.plot(ax=ax2, color='C3', alpha=0.5, label='Motion Corrected');
+
+#cdpp = noise_statistic(corr_lc.time, corr_lc.flux, verbose=True)
+cdpp = corr_lc.cdpp()
+#print(cdpp)
+
+final_lc=pd.DataFrame(np.c_[corr_lc.time, corr_lc.flux, corr_lc.flux_err])
+final_lc.columns = ['time','flux','flux_err']
+
+tab = table.Table(final_lc.values,
+                  names=['time','flux','flux_err'])
+
+num = 1
+comment_num = 'COMMENT{}'.format(num)
+
+#llc-default-aper
+aper = 'default'
+hdr[comment_num] = 'aper rad: {}'.format(aper)
+hdr['cdpp'] = cdpp
+
+bintab=fits.BinTableHDU(tab,name='BESTAPER',header=hdr)
+#append to original
+hdulist.append(bintab)
+
+hdu=fits.hdu.ImageHDU(np.array(aperture,dtype=float), name='APERTURE', header=hdr) #problem with bool
+#replace aperture
+hdulist[2] = hdu
+
+#import pdb; pdb.set_trace()
+fname_new = i.split('/')[-1].split('-')[0][4:]+'_test.fits'
+hdulist.writeto(fname_new)

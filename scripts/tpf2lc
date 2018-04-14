@@ -1,0 +1,84 @@
+#!/usr/bin/env python
+
+from glob import glob
+import argparse
+import sys
+sys.path.append('../K2tools')
+from utils import *
+
+parser = argparse.ArgumentParser(description="""
+                Aperture photometry with multiple apertures and append it to hdulist""",
+                usage='use "%(prog)s --help" for more information',
+                formatter_class=argparse.RawTextHelpFormatter)
+parser.add_argument('fname', help='tpf filename or directory containing tpfs', type=str)
+parser.add_argument('radii', help='list of radii (e.g. [3,4,5])', nargs="*", type=int)
+parser.add_argument('-mask', '--mask',
+                    help='aperture mask shape [round|square|irregular]', default='round', type=str)
+parser.add_argument('-sig', '--sigma',
+                    help='sigma for removing outliers', default=5, type=float)
+parser.add_argument('-fwin', '--flat_window',
+                    help='window length used in flattening lightcurve (default=301)', default=301, type=int)
+parser.add_argument('-cwin', '--corr_window',
+                    help='window length used in sff correction (default=51)', default=51, type=int)
+parser.add_argument('-limit', '--cutoff_limit',
+                    help='cutoff limit in defining irregular aperture mask (default=1.0)', default=1.0, type=float)
+parser.add_argument('-order', '--polyorder',
+                    help='order of polynomial fit of arclength', default=4, type=int)
+parser.add_argument('-tol', '--break_tolerance',
+                    help='break tolerance used in flattening lightcurve (default=5)', default=5, type=int)
+parser.add_argument('-s', '--save_as_tpf',
+                    help='append the measurements to hdulist', action='store_true', default=False)
+parser.add_argument('-v', '--verbose',
+                    help='print used and assumed parameter values', action='store_true', default=False)
+parser.add_argument('-o', '--outdir',
+                    help='output directory', type=str, default='reduced')
+
+args = parser.parse_args()
+fname = args.fname
+radii = args.radii
+mask  = args.mask
+sigma = args.sigma
+fwin  = args.flat_window
+cwin  = args.corr_window
+limit = args.cutoff_limit
+order = args.polyorder
+tol   = args.break_tolerance
+save  = args.save_as_tpf
+verbose = args.verbose
+outdir = args.outdir
+
+epics_reduced=[]
+epics_not_reduced=[]
+
+def run(epic,fname):
+    try:
+        print('EPIC {}'.format(epic))
+
+        flux_per_r, aper_mask = tpf2lc(fname, radii, aper_shape=mask,
+                          outlier_sigma=sigma, flat_window=fwin, corr_window=cwin,
+                          cutoff_limit=limit, polyorder=order, break_tolerance=tol,
+                          save_as_tpf=save, verbose=verbose, outdir=outdir)
+        epics_reduced.append(epic)
+
+    except Exception as e:
+        flux_per_r, aper_mask= None, None
+        print('---skipping EPIC {} due to\n{}\n---'.format(epic,e))
+        epics_not_reduced.append(epic)
+
+    if len(epics_not_reduced)>1:
+        print('The following epics where not reduced...\n{}'.format(epics_not_reduced))
+
+    return flux_per_r, aper_mask
+
+file_list = glob(fname)
+
+if len(file_list)>1:
+    #directory of tpfs
+    file_list.sort()
+    for fname in file_list:
+        epic = fname.split('/')[-1].split('-')[0][4:]
+        run(epic)
+else:
+    #just 1 filename
+    epic = fname.split('/')[-1].split('-')[0][4:]
+    run(epic,fname)
