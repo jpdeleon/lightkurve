@@ -30,7 +30,7 @@ setup(name='lightkurve2',
       install_requires=['numpy>=1.11', 'astropy>=1.3', 'scipy>=0.19.0',
                         'matplotlib>=1.5.3', 'tqdm', 'oktopus', 'bs4',
                         'requests', 'astroquery>=0.3.7', 'pandas', 'photutils',
-                        'scipy'], #'sklearn'
+                        'scipy', 'sklearn'],
       setup_requires=['pytest-runner'],
       tests_require=['pytest', 'pytest-cov', 'pytest-remotedata'],
       classifiers=[
