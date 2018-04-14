@@ -3,11 +3,11 @@
 ## Installation
 To install,
 ```python
-$ !pip install -e git+git@github.com:jpdeleon/lightkurve2.git@master#egg=lightkurve
+$ pip install -e git+git@github.com:jpdeleon/lightkurve2.git@master#egg=lightkurve
 ```
 
 ## Quick test of scripts
-To view tpf with stacked flux and superposed aperture mask 
+To view tpf with stacked flux and superposed aperture mask
 ```shell
 fname = '../data/Yu18candidates/ktwo211397844-unofficial-tpf.fits'
 ./make_mask $fname --r=4 --m='round' -s

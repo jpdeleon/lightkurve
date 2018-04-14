@@ -32,7 +32,6 @@ setup(name='lightkurve2',
                         'requests', 'astroquery>=0.3.7'],
       setup_requires=['pytest-runner'],
       tests_require=['pytest', 'pytest-cov', 'pytest-remotedata'],
-      include_package_data=True,
       classifiers=[
           "Development Status :: 5 - Production/Stable",
           "License :: OSI Approved :: MIT License",
