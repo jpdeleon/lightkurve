@@ -4,7 +4,7 @@
 To install,
 ```python
 $ conda create -n test python=3.6 && source activate test
-$ pip install -e git+git@github.com:jpdeleon/lightkurve2.git@master#egg=lightkurve
+$ pip install .
 ```
 
 ## Quick test of scripts
