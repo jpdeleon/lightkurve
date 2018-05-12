@@ -442,9 +442,11 @@ def plot_lc(fname,index,verbose=True,show_all_lc=False,show_mask=True):
 
         if show_mask:
             mask = hdulist[2].data
-            fluxes = tpf.flux
-            plot_aper_mask(fluxes,rad,aper_shape=shape,contrast=0.1,epic=tpf.keplerid)
-
+            #fluxes = tpf.flux
+            #plot_aper_mask(fluxes,rad,aper_shape=shape,contrast=0.1,epic=tpf.keplerid)
+            ax = tpf.plot(aperture_mask=mask, mask_color='w', #frame=300,
+                scale='linear', cmap='viridis', show_colorbar=True)
+            pl.show()
     elif index>hdulen:
         print('hdulist has index until {} only. Exiting!\n'.format(hdulen))
         sys.exit()
