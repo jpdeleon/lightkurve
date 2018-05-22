@@ -1,4 +1,4 @@
-#!/usr/bin/evn python
+#!/usr/bin/env python
 
 import numpy as np
 import matplotlib.pyplot as pl
@@ -12,6 +12,8 @@ from astropy.visualization import ZScaleInterval
 from astropy import table
 from astropy.io import fits
 from lightkurve import KeplerTargetPixelFile
+import operator
+from astropy.stats import sigma_clip
 
 #---------------------------PHOTOMETRY---------------------------#
 
@@ -231,7 +233,7 @@ def get_centroids(fluxes,  centroid_shift=None, method='abs_distance',
 def plot_aper_mask(fluxes,rad,aper_shape,contrast=0.1,epic=None):
     stacked = np.nansum(fluxes,axis=0)
     mask = make_mask(fluxes, rad = rad, shape=aper_shape)
-    x,y = centroid_com(stacked)
+    y,x = centroid_com(stacked)
 
     fig, ax = pl.subplots(1,1)
     interval = ZScaleInterval(contrast=contrast)
@@ -304,7 +306,9 @@ def tpf2lc(fname, radii, aper_shape='round', outlier_sigma=5,
         flat_window=301, corr_window=51, cutoff_limit=1.0, polyorder=4,
         break_tolerance=5,save_as_tpf=False, verbose=False, outdir='reduced'):
     '''
-    do aperture photometry with multiple apertures and a mask
+    Do aperture photometry with multiple apertures and a mask.
+    The light curve with a given aperture is appended with the original data and saved
+    as separate fits. The best light curve/aperture (determined with cdpp) is saved in index=1. 
     '''
     print('\nAperture photometry with r={} and {} mask...\n'.format(radii,aper_shape))
     if verbose:
@@ -317,6 +321,7 @@ def tpf2lc(fname, radii, aper_shape='round', outlier_sigma=5,
         raise ValueError('Kepler ID in header doesn\'t match the filename')
 
     flux_per_r = {}
+    cdpps = {}
     for r in radii:
         mask = make_mask(tpf.flux, rad=r, shape=aper_shape, epic=tpf.keplerid)
         lc = tpf.to_lightcurve(aperture_mask=mask);
@@ -328,28 +333,48 @@ def tpf2lc(fname, radii, aper_shape='round', outlier_sigma=5,
         corr_lc = flat_lc2.correct(method='sff',windows=corr_window)
 
         flux_per_r[r]=(corr_lc.time,corr_lc.flux,corr_lc.flux_err)
+        cdpps[r] = corr_lc.cdpp()
 
     if save_as_tpf:
-        hdr['cdpp'] = corr_lc.cdpp()
+        cdpp_list=[]
         #append to hdulist photometry of each aperture and save
         for num,r in enumerate(flux_per_r):
             comment_num = 'COMMENT{}'.format(num)
             aper_name = '{}_APER{}'.format(aper_shape,num)
             hdr['ap_rad'] = r
             hdr['ap_shape'] = aper_shape
+            hdr['cdpp'] = cdpps[r]
+            cdpp_list.append(cdpps[r])
 
             tab = table.Table(flux_per_r[r], names=['time','flux','flux_err'])
             bintab=fits.BinTableHDU(tab,name=aper_name,header=hdr)
-            #append to original
+            #append bin table to original hdulist
             hdulist.append(bintab)
 
-        #make hdu for mask
+        ###TO DO: add lc generated with irregular mask
+        #
+
+        #find smallest cdpp
+        best_r=min(cdpps.items(), key=operator.itemgetter(1))[0]
+
+        #re-create bin table
+        #tab = table.Table(flux_per_r[best_r], names=['time','flux','flux_err'])
+        #bintab=fits.BinTableHDU(tab,name=aper_name,header=hdr)
+        #move to index 3 (0: primary; 1: table; 2: aperture)
+        #hdulist.insert(3, bintab)
+
+        #alternatively, move hdu into last index of hdulist
+        hdulist += [hdulist.pop(3+np.argmin(cdpp_list))]
+
+        #make hdu for best mask
+        mask = make_mask(tpf.flux, rad=best_r, shape=aper_shape, epic=tpf.keplerid)
         hdu=fits.hdu.ImageHDU(np.array(mask,dtype=float), name='APERTURE', header=hdr) #problem with bool
         #replace aperture
         hdulist[2] = hdu
 
         #save fits
-        fname_new = os.path.join(outdir,fname.split('/')[-1].split('-')[0][4:]+'_'+aper_shape+'.fits')
+        #fname_new = os.path.join(outdir,fname.split('/')[-1].split('-')[0][4:]+'_'+aper_shape+'.fits')
+        fname_new = os.path.join(outdir,str(epic)+'_'+aper_shape+'.fits')
         if not os.path.exists(outdir):
             os.makedirs(outdir)
         hdulist.writeto(fname_new)
@@ -396,7 +421,7 @@ def read_tpf(fname,index,return_hdr=True):
         else:
             return df
 
-def plot_lc(fname,index,verbose=True,show_all_lc=False,show_mask=True):
+def plot_lc(fname,index,verbose=True,show_all_lc=False,show_mask=True,sigma=None):
     hdulist = fits.open(fname)
     hdulen = len(hdulist)
     tpf = KeplerTargetPixelFile(fname, quality_bitmask='hardest')
@@ -405,19 +430,21 @@ def plot_lc(fname,index,verbose=True,show_all_lc=False,show_mask=True):
 
     if index == 0: #primary
         data, hdr = read_tpf(fname,index,return_hdr=True)
-        print('Plot of target table currently unsupported. Exiting!\n')
+        print('Plot of primary hdu currently unsupported. Try index=2\n')
         sys.exit()
 
     elif index == 1: #target tables
         data, hdr = read_tpf(fname,index,return_hdr=True)
-        print('Plot of target table currently unsupported. Exiting!\n')
+        print('Plot of target table currently unsupported. Try index=2\n')
         sys.exit()
 
-    fig, ax = pl.subplots(1,1,figsize=(10,10))
+    nrows=hdulen-3 #remove first 3 indices
+    fig, ax = pl.subplots(nrows=nrows,ncols=1,figsize=(10,10),sharex=True,squeeze=True)
     if index<hdulen and index>2:
         #read flux per r
-        #import pdb; pdb.set_trace()
+        epic = str(tpf.keplerid)
         if show_all_lc:
+            n=0
             for idx in np.arange(3,hdulen,1):
                 df, hdr = read_tpf(fname,idx,return_hdr=True)
                 t = df['time']
@@ -426,9 +453,17 @@ def plot_lc(fname,index,verbose=True,show_all_lc=False,show_mask=True):
                 rad = hdr['ap_rad']
                 shape = hdr['ap_shape']
 
-                ax.errorbar(t,f,yerr=ferr,marker='o',label='r={}'.format(rad))
-                ax.set_title(tpf.keplerid)
-                pl.legend()
+                if sigma is not None:
+                    f_c=sigma_clip(f, sigma=sigma)
+                    t = t[~f_c.mask]
+                    f = f[~f_c.mask]
+                    ferr = ferr[~f_c.mask]
+                    print('removed {} outliers.\n'.format(np.sum(f_c.mask)))
+                ax[n].errorbar(t,f,yerr=ferr,marker='o',label='r={}'.format(rad))
+                ax[n].legend()
+                n+=1
+            pl.title('EPIC-'+epic)
+
         else:
             df, hdr = read_tpf(fname,index,return_hdr=True)
             t = df['time']
@@ -437,7 +472,7 @@ def plot_lc(fname,index,verbose=True,show_all_lc=False,show_mask=True):
             rad = hdr['ap_radius']
             shape = hdr['ap_shape']
             ax.errorbar(t,f,yerr=ferr,marker='o',label='r={}'.format(rad))
-            ax.set_title(tpf.keplerid)
+            ax.set_title(epic)
             pl.legend()
 
         if show_mask:

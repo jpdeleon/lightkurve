@@ -11,7 +11,7 @@ parser = argparse.ArgumentParser(description="""
                 usage='use "%(prog)s --help" for more information',
                 formatter_class=argparse.RawTextHelpFormatter)
 parser.add_argument('fname', help='tpf filename or directory containing tpfs', type=str)
-parser.add_argument('radii', help='list of radii in pix (e.g. 3 4 5)', nargs="*", type=int)
+parser.add_argument('radii', help='list of radii in pix (e.g. 2 3 4)', nargs="*", type=int)
 parser.add_argument('-mask', '--mask',
                     help='aperture mask shape [round|square|irregular]', default='round', type=str)
 parser.add_argument('-sig', '--sigma',
@@ -62,7 +62,7 @@ def run(epic,fname):
 
     except Exception as e:
         flux_per_r, aper_mask= None, None
-        print('---skipping EPIC {} due to\n{}\n---'.format(epic,e))
+        print('---skipping EPIC {}---\n{}\n'.format(epic,e))
         epics_not_reduced.append(epic)
 
     if len(epics_not_reduced)>1:

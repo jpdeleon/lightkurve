@@ -15,12 +15,15 @@ parser.add_argument('-a', '--show_all_lc',
                     help='show all lc apertures', action='store_true', default=True)
 parser.add_argument('-m', '--show_mask',
                     help='show aperture mask used', action='store_true', default=True)
+parser.add_argument('-s', '--sigma',
+                    help='sigma for outlier rejection', type=float, default=None)
 
 args = parser.parse_args()
 fname = args.fname
 index = args.index
+sigma = args.sigma
 verbose = args.verbose
 show_all_lc = args.show_all_lc
 show_mask   = args.show_mask
 
-fig = K2tools.plot_lc(fname,index,verbose=verbose,show_all_lc=show_all_lc,show_mask=show_mask)
+fig = K2tools.plot_lc(fname,index,verbose=verbose,show_all_lc=show_all_lc,show_mask=show_mask,sigma=sigma)
