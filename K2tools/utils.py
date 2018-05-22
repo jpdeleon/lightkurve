@@ -310,6 +310,9 @@ def tpf2lc(fname, radii, aper_shape='round', outlier_sigma=5,
     The light curve with a given aperture is appended with the original data and saved
     as separate fits. The best light curve/aperture (determined with cdpp) is saved in index=1. 
     '''
+    fname_new = os.path.join(outdir,epic+'_'+aper_shape+'.fits')
+    if 
+
     print('\nAperture photometry with r={} and {} mask...\n'.format(radii,aper_shape))
     if verbose:
         print("""sigma cut for outliers: {}\nwindow length (flatten): {}\nwindow length (sff): {}\ncutoff limit (if mask=irregular): {}\n
@@ -317,13 +320,15 @@ def tpf2lc(fname, radii, aper_shape='round', outlier_sigma=5,
     hdr = fits.getheader(fname)
     hdulist = fits.open(fname)
     tpf = KeplerTargetPixelFile(fname, quality_bitmask='hardest')
-    if not str(tpf.keplerid) in hdulist.filename():
+    epic=str(tpf.keplerid)
+
+    if epic not in hdulist.filename():
         raise ValueError('Kepler ID in header doesn\'t match the filename')
 
     flux_per_r = {}
     cdpps = {}
     for r in radii:
-        mask = make_mask(tpf.flux, rad=r, shape=aper_shape, epic=tpf.keplerid)
+        mask = make_mask(tpf.flux, rad=r, shape=aper_shape, epic=epic)
         lc = tpf.to_lightcurve(aperture_mask=mask);
         lc2 = lc.remove_nans().remove_outliers(sigma=outlier_sigma)
         flat_lc2, trend = lc2.flatten(window_length=flat_window,
@@ -334,6 +339,18 @@ def tpf2lc(fname, radii, aper_shape='round', outlier_sigma=5,
 
         flux_per_r[r]=(corr_lc.time,corr_lc.flux,corr_lc.flux_err)
         cdpps[r] = corr_lc.cdpp()
+
+    ###TO DO: add lc generated with irregular mask
+    mask = make_mask(tpf.flux, rad=r, shape='irregular', epic=epic)
+    lc = tpf.to_lightcurve(aperture_mask=mask);
+    lc2 = lc.remove_nans().remove_outliers(sigma=outlier_sigma)
+    flat_lc2, trend = lc2.flatten(window_length=flat_window,
+                                polyorder=polyorder,
+                                break_tolerance=break_tolerance,
+                                return_trend=True)
+    corr_lc = flat_lc2.correct(method='sff',windows=corr_window)
+    flux_per_r['irreg']=(corr_lc.time,corr_lc.flux,corr_lc.flux_err)
+    cdpps['irreg'] = corr_lc.cdpp()
 
     if save_as_tpf:
         cdpp_list=[]
@@ -351,9 +368,6 @@ def tpf2lc(fname, radii, aper_shape='round', outlier_sigma=5,
             #append bin table to original hdulist
             hdulist.append(bintab)
 
-        ###TO DO: add lc generated with irregular mask
-        #
-
         #find smallest cdpp
         best_r=min(cdpps.items(), key=operator.itemgetter(1))[0]
 
@@ -367,14 +381,16 @@ def tpf2lc(fname, radii, aper_shape='round', outlier_sigma=5,
         hdulist += [hdulist.pop(3+np.argmin(cdpp_list))]
 
         #make hdu for best mask
-        mask = make_mask(tpf.flux, rad=best_r, shape=aper_shape, epic=tpf.keplerid)
+        if best_r == 'irreg':
+            mask = make_mask(tpf.flux, rad=r, shape='irreg', epic=epic)
+        else:
+            mask = make_mask(tpf.flux, rad=best_r, shape=aper_shape, epic=epic)
         hdu=fits.hdu.ImageHDU(np.array(mask,dtype=float), name='APERTURE', header=hdr) #problem with bool
         #replace aperture
         hdulist[2] = hdu
 
         #save fits
         #fname_new = os.path.join(outdir,fname.split('/')[-1].split('-')[0][4:]+'_'+aper_shape+'.fits')
-        fname_new = os.path.join(outdir,str(epic)+'_'+aper_shape+'.fits')
         if not os.path.exists(outdir):
             os.makedirs(outdir)
         hdulist.writeto(fname_new)

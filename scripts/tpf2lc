@@ -66,7 +66,7 @@ def run(epic,fname):
         epics_not_reduced.append(epic)
 
     if len(epics_not_reduced)>1:
-        print('The following epics where not reduced...\n{}'.format(epics_not_reduced))
+        print('The following epics where not reduced...\n{}\n'.format(epics_not_reduced))
 
     return flux_per_r, aper_mask
 
